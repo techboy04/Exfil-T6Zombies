@@ -58,7 +58,7 @@ createExfilIcon()
     exfil_icon.x = level.iconlocation[ 0 ];
     exfil_icon.y = level.iconlocation[ 1 ];
 	exfil_icon.z = level.iconlocation[ 2 ] + 80;
-	exfil_icon.color = (0,1,0);
+	exfil_icon.color = (0,0,1);
     exfil_icon.isshown = 1;
     exfil_icon.archived = 0;
     exfil_icon setshader( "waypoint_revive", 8, 8 );
@@ -152,12 +152,14 @@ spawnExfil()
 						{
 							player thread showvoting(i);
 							player thread checkVotingInput();
+							player.canrespawn = 0;
 						}
 						level waittill_any ("voting_finished","voting_expired");
 					}
 					if (level.votingsuccess == 1)
 						{
 						level.exfilvoting = 0;
+						earthquake( 0.5, 0.5, self.origin, 800 );
 						foreach ( player in get_players() )
 						{
 							player playsound( "evt_nuke_flash" );
@@ -181,6 +183,7 @@ spawnExfil()
 						playfx( level._effect[ "powerup_on" ], level.exfillocation + (0,0,30) );
 						playfx( level._effect[ "lght_marker" ], level.exfillocation );
 						level thread spawnExit();
+						level thread spawnMiniBoss();
 						level notify ("exfil_started");
 					
 						fadetowhite fadeovertime( 1 );
@@ -284,7 +287,7 @@ exfilHUD()
 getTimerText(seconds)
 {
 	
-	text = (minutestext + ":" + secondstext);
+	text = (seconds);
 	return text;
 }
 
@@ -373,7 +376,7 @@ setExfillocation()
 	{
 		if(getDvar("mapname") == "zm_prison") //mob of the dead
 		{
-			level.iconlocation = (-755,8699,1336);
+			level.iconlocation = (-1006,8804,1336);
 			level.escapezone = ("Roof");
 			level.radiomodel = ("");
 			level.radioangle = (0,90,0);
@@ -462,7 +465,7 @@ spawnExit()
 			else
 			{
 				escapetransition.alpha = 0;
-				i thread maps/mp/gametypes_zm/_spectating::setspectatepermissions();
+				i thread maps\mp\gametypes_zm\_spectating::setspectatepermissions();
     			i.sessionstate = "spectator";
 				escapetransition destroy();
 				if (checkAmountPlayers())
@@ -528,9 +531,6 @@ showscoreboardtext()
 
     if ( self issplitscreen() )
         scoreboardText.y += 70;
-
-    if ( isdefined( offset ) )
-        scoreboardText.y += offset;
 
     scoreboardText.foreground = 1;
     scoreboardText.fontscale = 8;
@@ -662,7 +662,7 @@ forcePlayersToExfil()
 	else
 	{
 		escapetransition.alpha = 0;
-		self thread maps/mp/gametypes_zm/_spectating::setspectatepermissions();
+		self thread maps\mp\gametypes_zm\_spectating::setspectatepermissions();
     	self.sessionstate = "spectator";
 		escapetransition destroy();
 		if (checkAmountPlayers())
@@ -859,6 +859,46 @@ getRequirement()
 	}
 }
 
+spawnMiniBoss()
+{
+	if(getDvar("mapname") == "zm_prison")
+	{
+		level notify( "spawn_brutus", 4 );
+	}
+	else if(getDvar("mapname") == "zm_tomb")
+	{
+		level.mechz_left_to_spawn++;
+		level notify( "spawn_mechz" );
+	}
+}
+
+change_zombies_speed(speedtoset){
+	level endon("end_game");
+	sprint = speedtoset;
+	can_sprint = false;
+ 	while(true){
+ 		if (level.ragestarted == 1)
+ 		{
+ 			can_sprint = false;
+    		zombies = getAiArray(level.zombie_team);
+    		foreach(zombie in zombies)
+    		if(!isDefined(zombie.cloned_distance))
+    			zombie.cloned_distance = zombie.origin;
+    		else if(distance(zombie.cloned_distance, zombie.origin) > 15){
+    			can_sprint = true;
+    			zombie.cloned_distance = zombie.origin;
+    			if(zombie.zombie_move_speed == "run" || zombie.zombie_move_speed != sprint)
+    				zombie maps\mp\zombies\_zm_utility::set_zombie_run_cycle(sprint);
+    		}else if(distance(zombie.cloned_distance, zombie.origin) <= 15){
+    			can_sprint = false;
+    			zombie.cloned_distance = zombie.origin;
+    			zombie maps\mp\zombies\_zm_utility::set_zombie_run_cycle("run");
+    		}
+    	}
+    	wait 0.25;
+    }
+}
+
 show_big_message(setmsg, sound)
 {
     msg = setmsg;
@@ -940,31 +980,4 @@ show_big_hud_msg_cleanup()
 
     if ( isdefined( self ) )
         self destroy();
-}
-
-change_zombies_speed(speedtoset){
-	level endon("end_game");
-	sprint = speedtoset;
-	can_sprint = false;
- 	while(true){
- 		if (level.ragestarted == 1)
- 		{
- 			can_sprint = false;
-    		zombies = getAiArray(level.zombie_team);
-    		foreach(zombie in zombies)
-    		if(!isDefined(zombie.cloned_distance))
-    			zombie.cloned_distance = zombie.origin;
-    		else if(distance(zombie.cloned_distance, zombie.origin) > 15){
-    			can_sprint = true;
-    			zombie.cloned_distance = zombie.origin;
-    			if(zombie.zombie_move_speed == "run" || zombie.zombie_move_speed != sprint)
-    				zombie maps/mp/zombies/_zm_utility::set_zombie_run_cycle(sprint);
-    		}else if(distance(zombie.cloned_distance, zombie.origin) <= 15){
-    			can_sprint = false;
-    			zombie.cloned_distance = zombie.origin;
-    			zombie maps/mp/zombies/_zm_utility::set_zombie_run_cycle("run");
-    		}
-    	}
-    	wait 0.25;
-    }
 }
