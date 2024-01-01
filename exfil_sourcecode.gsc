@@ -20,7 +20,6 @@ init()
     level.successfulexfil = 0;
     level.gameisending = 0;
     level.exfilplayervotes = 0;
-    level.votingrequirement = 0;
     level thread spawnExfil();
     level thread enableExfil();
     level thread checkForRound();
@@ -109,10 +108,13 @@ enableExfil()
 		level waittill ("can_exfil");
 		level endon ("exfil_started");
 		level.canexfil = 1;
+		
 		foreach ( player in get_players() )
-        	player thread showExfilMessage();
+	       	player thread showExfilMessage();
+
 		wait 120;
 		level.canexfil = 0;
+
 		foreach ( player in get_players() )
         	player thread showExfilMessage();
 	}
@@ -140,22 +142,30 @@ spawnExfil()
 				
 				if (level.exfilvoting == 0)
 				{
+					level.exfilplayervotes = 0;
 					level.exfilvoting = 1;
-					if (level.players.size == 1)
+
+					level.exfilplayervotes += 1;
+					self.exfilvoted = 1;
+					if (level.exfilplayervotes >= level.players.size)
 					{
 						level.votingsuccess = 1;
+						level notify ("voting_finished");
 					}
-					else
+
+					level thread exfilVoteTimer();
+					foreach ( player in get_players() )
 					{
-						level thread exfilVoteTimer();
-						foreach ( player in get_players() )
-						{
-							player thread showvoting(i);
-							player thread checkVotingInput();
-							player.canrespawn = 0;
-						}
+						player thread showvoting(i);
+						player thread checkVotingInput();
+						player.canrespawn = 0;
+					}
+					
+					if (level.votingsuccess != 1)
+					{
 						level waittill_any ("voting_finished","voting_expired");
 					}
+
 					if (level.votingsuccess == 1)
 						{
 						level.exfilvoting = 0;
@@ -185,6 +195,7 @@ spawnExfil()
 						level thread spawnExit();
 						level thread spawnMiniBoss();
 						level notify ("exfil_started");
+						level thread sendsubtitletext(chooseAnnouncer(), 1, "The portal has opened at " + level.escapezone + "", 5);
 					
 						fadetowhite fadeovertime( 1 );
 						fadetowhite.alpha = 0;
@@ -447,7 +458,7 @@ spawnExit()
 			escapetransition.alpha = 0;
 			escapetransition.horzalign = "fullscreen";
 			escapetransition.vertalign = "fullscreen";
-			escapetransition.foreground = 1;
+			escapetransition.foreground = 0;
 			escapetransition setshader( "white", 640, 480 );
 			escapetransition.color = (0,0,0);
 			escapetransition fadeovertime( 0.5 );
@@ -460,6 +471,7 @@ spawnExit()
 			i disableinvulnerability();
 			if (level.players.size == 1)
 			{
+				level thread sendsubtitletext(chooseAnnouncer(), 1, "Everyone has successfully escaped!", 5);
 				level notify( "end_game" );
 			}
 			else
@@ -470,7 +482,12 @@ spawnExit()
 				escapetransition destroy();
 				if (checkAmountPlayers())
 				{
+					level thread sendsubtitletext(chooseAnnouncer(), 1, "Everyone has successfully escaped!", 5);
 					level notify( "end_game" );
+				}
+				else
+				{
+					level thread sendsubtitletext(chooseAnnouncer(), 1, i + " has escaped!", 2);
 				}
 				
 			}
@@ -743,7 +760,7 @@ showVoting(execPlayer)
 	while(1)
 	{
 		voting_text setValue (level.votingtimer);
-		votesLeft = level.votingrequirement - level.exfilplayervotes;
+		votesLeft = level.players.size - level.exfilplayervotes;
 		voting_votes setValue (votesLeft);
 		if (self.exfilvoted == 0)
 		{
@@ -769,13 +786,13 @@ checkVotingInput()
 {
 	level endon ("voting_finished");
 	level endon ("voting_expired");
-	while((level.exfilvoting == 1) && (self.exfilvoted == 0) && (level.exfilvoteexec != self))
+	while(level.exfilvoting == 1 && self.exfilvoted == 0)
 	{
-		if(self actionslotfourbuttonpressed())
+		if(self actionslotfourbuttonpressed() || (isDefined(self.bot)))
 		{
 			level.exfilplayervotes += 1;
 			self.exfilvoted = 1;
-			if (level.exfilplayervotes >= level.votingrequirement)
+			if (level.exfilplayervotes >= level.players.size)
 			{
 				level.votingsuccess = 1;
 				level notify ("voting_finished");
@@ -789,10 +806,9 @@ checkIfPlayersVoted()
 {
 	level endon ("voting_finished");
 	level endon ("voting_expired");
-	level.votingrequirement = int(getRequirement());
 	while(1)
 	{
-		if (level.exfilplayervotes >= level.votingrequirement)
+		if (level.exfilplayervotes >= level.players.size)
 		{
 			level.votingsuccess = 1;
 			level notify ("voting_finished");
@@ -811,7 +827,6 @@ exfilVoteTimer()
 		level.votingtimer -= 1;
 		if (level.votingtimer < 0)
 		{
-			level.votingrequirement = 0;
 			level.exfilplayervotes = 0;
 			foreach (player in getPlayers())
 				player.exfilvoted = 0;
@@ -825,38 +840,7 @@ exfilVoteTimer()
 
 getRequirement()
 {
-	if (level.players.size == 1)
-	{
-		return 1;
-	}
-	else if (level.players.size == 2)
-	{
-		return 2;
-	}
-	else if (level.players.size == 3)
-	{
-		return 2;
-	}
-	else if (level.players.size == 4)
-	{
-		return 3;
-	}
-	else if (level.players.size == 5)
-	{
-		return 3;
-	}
-	else if (level.players.size == 6)
-	{
-		return 4;
-	}
-	else if (level.players.size == 7)
-	{
-		return 5;
-	}
-	else if (level.players.size == 8)
-	{
-		return 6;
-	}
+	return level.players.size;
 }
 
 spawnMiniBoss()
@@ -870,114 +854,4 @@ spawnMiniBoss()
 		level.mechz_left_to_spawn++;
 		level notify( "spawn_mechz" );
 	}
-}
-
-change_zombies_speed(speedtoset){
-	level endon("end_game");
-	sprint = speedtoset;
-	can_sprint = false;
- 	while(true){
- 		if (level.ragestarted == 1)
- 		{
- 			can_sprint = false;
-    		zombies = getAiArray(level.zombie_team);
-    		foreach(zombie in zombies)
-    		if(!isDefined(zombie.cloned_distance))
-    			zombie.cloned_distance = zombie.origin;
-    		else if(distance(zombie.cloned_distance, zombie.origin) > 15){
-    			can_sprint = true;
-    			zombie.cloned_distance = zombie.origin;
-    			if(zombie.zombie_move_speed == "run" || zombie.zombie_move_speed != sprint)
-    				zombie maps\mp\zombies\_zm_utility::set_zombie_run_cycle(sprint);
-    		}else if(distance(zombie.cloned_distance, zombie.origin) <= 15){
-    			can_sprint = false;
-    			zombie.cloned_distance = zombie.origin;
-    			zombie maps\mp\zombies\_zm_utility::set_zombie_run_cycle("run");
-    		}
-    	}
-    	wait 0.25;
-    }
-}
-
-show_big_message(setmsg, sound)
-{
-    msg = setmsg;
-    players = get_players();
-
-    if ( isdefined( level.hostmigrationtimer ) )
-    {
-        while ( isdefined( level.hostmigrationtimer ) )
-            wait 0.05;
-
-        wait 4;
-    }
-
-    foreach ( player in players )
-        player thread show_big_hud_msg( msg );
-        player playsound(sound);
-
-}
-
-show_big_hud_msg( msg, msg_parm, offset, cleanup_end_game )
-{
-    self endon( "disconnect" );
-
-    while ( isdefined( level.hostmigrationtimer ) )
-        wait 0.05;
-
-    large_hudmsg = newclienthudelem( self );
-    large_hudmsg.alignx = "center";
-    large_hudmsg.aligny = "middle";
-    large_hudmsg.horzalign = "center";
-    large_hudmsg.vertalign = "middle";
-    large_hudmsg.y -= 130;
-
-    if ( self issplitscreen() )
-        large_hudmsg.y += 70;
-
-    if ( isdefined( offset ) )
-        large_hudmsg.y += offset;
-
-    large_hudmsg.foreground = 1;
-    large_hudmsg.fontscale = 5;
-    large_hudmsg.alpha = 0;
-    large_hudmsg.color = ( 1, 1, 1 );
-    large_hudmsg.hidewheninmenu = 1;
-    large_hudmsg.font = "default";
-
-    if ( isdefined( cleanup_end_game ) && cleanup_end_game )
-    {
-        level endon( "end_game" );
-        large_hudmsg thread show_big_hud_msg_cleanup();
-    }
-
-    if ( isdefined( msg_parm ) )
-        large_hudmsg settext( msg, msg_parm );
-    else
-        large_hudmsg settext( msg );
-
-    large_hudmsg changefontscaleovertime( 0.25 );
-    large_hudmsg fadeovertime( 0.25 );
-    large_hudmsg.alpha = 1;
-    large_hudmsg.fontscale = 2;
-    wait 3.25;
-    large_hudmsg changefontscaleovertime( 1 );
-    large_hudmsg fadeovertime( 1 );
-    large_hudmsg.alpha = 0;
-    large_hudmsg.fontscale = 5;
-    wait 1;
-    large_hudmsg notify( "death" );
-
-    if ( isdefined( large_hudmsg ) )
-        large_hudmsg destroy();
-}
-
-show_big_hud_msg_cleanup()
-{
-    self endon( "death" );
-
-    level waittill( "end_game" );
-
-    if ( isdefined( self ) )
-        self destroy();
 }
