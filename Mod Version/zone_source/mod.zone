@@ -1,0 +1,13 @@
+>game,T6
+>name,mod
+>type,fastfile
+
+xmodel,p6_zm_buildable_sq_transceiver
+image,~~-gp6_zm_buildable_sq_s-rgb&~6c945a44
+image,p6_zm_buildable_sq_n
+image,~-gp6_zm_buildable_sq_c
+material,mc/mtl_p6_zm_buildable_sq
+
+material,hud_icon_exfil
+script,scripts/zm/main.gsc
+soundbank,mod.all
