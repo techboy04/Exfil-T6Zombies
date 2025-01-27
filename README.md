@@ -23,14 +23,14 @@ Download zm_exfil zip and put it in your Plutonium T6 mods folder
 There are configurable options which can be changed via the **Custom Games** menu instead of the console! (You can still do it in the console)
 The values also save after you set them so they load when coming back!
 
-``set exfil_music 0/1/2/3`` - Choose whether or not you wanna use the improved rules or the rules from Black Ops 6.
+``set exfil_music 0/1/2/3`` - Choose the music that will play once Exfil activates.
 - 0 - Random
 - 1 - Cold War
 - 2 - Black Ops 6
 - 3 - None
 - **Default:** ``0``
 
-``set enable_exfil_vox 0/1/2/3`` - Choose whether or not you wanna use the improved rules or the rules from Black Ops 6.
+``set enable_exfil_vox 0/1/2/3`` - Choose how you want the subtitles and audio handled. MOD ONLY!
 - 0 - Disabled
 - 1 - Both Audio and Subtitles
 - 2 - Only Audio
