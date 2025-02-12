@@ -199,6 +199,7 @@ spawnExfil()
 						playfx( level._effect[ "lght_marker" ], level.exfillocation );
 						level thread spawnExit();
 						level thread spawnMiniBoss();
+						level thread maintain_exfil_zombie_count();
 						level notify ("exfil_started");
 						level thread sendsubtitletext(chooseAnnouncer(), 1, "The portal has opened at " + level.escapezone + "", 5);
 					
@@ -219,6 +220,19 @@ spawnExfil()
 		}
 
 		wait 0.5;
+	}
+}
+
+maintain_exfil_zombie_count()
+{
+	level endon ("exfil_end");
+	for(;;)
+	{
+		if(level.zombie_total > 40)
+		{
+			level.zombie_total = 40;
+		}
+		wait 0.01;
 	}
 }
 
