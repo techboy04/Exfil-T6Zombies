@@ -213,6 +213,7 @@ spawnExfil()
 						playfx( level._effect[ "lght_marker" ], level.exfillocation );
 						level thread spawnExit();
 						level thread spawnMiniBoss();
+						level thread maintain_exfil_zombie_count();
 						level notify ("exfil_started");
 //						playsound(do_vox("exfil_during"));
 					
@@ -257,6 +258,7 @@ getTimerText(seconds)
 startCountdown(numtoset)
 {
 	level endon("game_ended");
+	level endon("exfil_everyone_escapes");
 	level endon("end_game");
 	level.timer = numtoset;
 	while(level.timer > 0)
@@ -555,17 +557,17 @@ spawnExit()
 			escapetransition.color = (0,0,0);
 			escapetransition fadeovertime( 0.5 );
 			escapetransition.alpha = 1;
-			wait 3;
+			wait 0.5;
 			
 //			escapetransition.foreground = 0;
 //			escapetransition fadeovertime( 0.2 );
 //			escapetransition.alpha = 0;
-			wait 2;
 			i disableinvulnerability();
 			if (level.players.size == 1)
 			{
 				level thread sendsubtitletext(chooseAnnouncer(), 1, "Everyone has successfully escaped!", "", 5);
 				i.sessionstate = "spectator";
+				level notify ("exfil_everyone_escapes");
 				level notify( "end_game" );
 			}
 			else
@@ -578,6 +580,7 @@ spawnExit()
 				{
 					level thread sendsubtitletext(chooseAnnouncer(), 1, "Everyone has successfully escaped!", "", 5);
 					level notify( "end_game" );
+					level notify ("exfil_everyone_escapes");
 				}
 				else
 				{
@@ -597,6 +600,19 @@ waitTillNoZombies()
 	while(get_round_enemy_array().size + level.zombie_total > 0)
 	{
 		wait 0.1;
+	}
+}
+
+maintain_exfil_zombie_count()
+{
+	level endon ("exfil_end");
+	for(;;)
+	{
+		if(level.zombie_total > 40)
+		{
+			level.zombie_total = 40;
+		}
+		wait 0.01;
 	}
 }
 
@@ -1143,7 +1159,8 @@ playexfilmusic()
     ent thread stopexfilmusic();
 	if(getDvarInt("exfil_music") == 0)
 	{
-		if(randomintrange(1,2) == 1)
+		random = randomintrange(1,3);
+		if(random <= 1)
 		{
 			ent playloopsound( "mus_exfil" );
 		}
