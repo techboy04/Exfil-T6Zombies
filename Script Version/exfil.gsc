@@ -514,7 +514,7 @@ spawnExit()
 			escapetransition.color = (0,0,0);
 			escapetransition fadeovertime( 0.5 );
 			escapetransition.alpha = 1;
-			wait 3;
+			wait 0.5;
 			
 			escapetransition.foreground = 0;
 			escapetransition fadeovertime( 0.2 );
